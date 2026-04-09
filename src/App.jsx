@@ -29,35 +29,45 @@ function App() {
     setTodos(todos.filter(t => t.id !== id))
   }
 
-  const clearCompleted = () => {
-    setTodos(todos.filter(t => !t.completed))
-  }
-
   const filtered = todos.filter(t => {
-    if (filter === 'active') return !t.completed
     if (filter === 'completed') return t.completed
     return true
   })
 
-  const activeCount = todos.filter(t => !t.completed).length
-
   return (
     <div className="app">
-      <h1>todos</h1>
+      <h1>Todo List</h1>
 
       <form onSubmit={addTodo} className="input-row">
         <input
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="What needs to be done?"
+          placeholder="Add a new task..."
           autoFocus
         />
         <button type="submit">Add</button>
       </form>
 
-      {todos.length > 0 && (
-        <div className="todo-box">
+      <div className="tabs">
+        <button
+          className={filter === 'all' ? 'active' : ''}
+          onClick={() => setFilter('all')}
+        >
+          All
+        </button>
+        <button
+          className={filter === 'completed' ? 'active' : ''}
+          onClick={() => setFilter('completed')}
+        >
+          Completed
+        </button>
+      </div>
+
+      <div className="todo-box">
+        {filtered.length === 0 ? (
+          <p className="empty">No tasks here.</p>
+        ) : (
           <ul className="todo-list">
             {filtered.map(todo => (
               <li key={todo.id} className={todo.completed ? 'completed' : ''}>
@@ -71,26 +81,8 @@ function App() {
               </li>
             ))}
           </ul>
-
-          <div className="footer">
-            <span>{activeCount} item{activeCount !== 1 ? 's' : ''} left</span>
-            <div className="filters">
-              {['all', 'active', 'completed'].map(f => (
-                <button
-                  key={f}
-                  className={filter === f ? 'active' : ''}
-                  onClick={() => setFilter(f)}
-                >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                </button>
-              ))}
-            </div>
-            {todos.some(t => t.completed) && (
-              <button onClick={clearCompleted}>Clear completed</button>
-            )}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
