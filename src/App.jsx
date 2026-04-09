@@ -1,32 +1,47 @@
 import { useState, useEffect } from 'react'
+import { ref, onValue, set } from 'firebase/database'
+import { db } from './firebase'
 import './App.css'
 
 function App() {
-  const [todos, setTodos] = useState(() => {
-    const saved = localStorage.getItem('todos')
-    return saved ? JSON.parse(saved) : []
-  })
+  const [todos, setTodos] = useState([])
   const [input, setInput] = useState('')
   const [filter, setFilter] = useState('all')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    localStorage.setItem('todos', JSON.stringify(todos))
-  }, [todos])
+    const todosRef = ref(db, 'todos')
+    const unsubscribe = onValue(todosRef, (snapshot) => {
+      const data = snapshot.val()
+      setTodos(data ? Object.values(data) : [])
+      setLoading(false)
+    })
+    return () => unsubscribe()
+  }, [])
+
+  const saveTodos = (updated) => {
+    const todosRef = ref(db, 'todos')
+    const obj = updated.reduce((acc, t) => ({ ...acc, [t.id]: t }), {})
+    set(todosRef, updated.length ? obj : null)
+  }
 
   const addTodo = (e) => {
     e.preventDefault()
     const text = input.trim()
     if (!text) return
-    setTodos([...todos, { id: Date.now(), text, completed: false }])
+    const updated = [...todos, { id: Date.now(), text, completed: false }]
+    saveTodos(updated)
     setInput('')
   }
 
   const toggleTodo = (id) => {
-    setTodos(todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t))
+    const updated = todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
+    saveTodos(updated)
   }
 
   const deleteTodo = (id) => {
-    setTodos(todos.filter(t => t.id !== id))
+    const updated = todos.filter(t => t.id !== id)
+    saveTodos(updated)
   }
 
   const filtered = todos.filter(t => {
@@ -65,7 +80,9 @@ function App() {
       </div>
 
       <div className="todo-box">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <p className="empty">Loading...</p>
+        ) : filtered.length === 0 ? (
           <p className="empty">No tasks here.</p>
         ) : (
           <ul className="todo-list">
